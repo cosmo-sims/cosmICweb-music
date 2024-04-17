@@ -2,6 +2,8 @@ import os
 import sys
 import tempfile
 import subprocess
+from typing import NamedTuple
+
 import click
 import requests
 from collections import namedtuple
@@ -39,6 +41,14 @@ DownloadConfig = namedtuple(
         "accessed_at",
     ],
 )
+
+
+class Args(NamedTuple):
+    url: str
+    output_path: str
+    common_directory: str
+    attempts: int
+
 
 
 def query_yes_no(question, default="yes"):
@@ -215,7 +225,7 @@ def call_music():
     pass
 
 
-def process_config(config, args):
+def process_config(config, args: Args):
     ellipsoids = []
     for halo_name, url in zip(config.halo_names, config.halo_urls):
         logging.info("Fetching ellipsoids from halo " + halo_name)
@@ -249,7 +259,7 @@ def process_config(config, args):
             continue
         logging.info("Composing MUSIC configuration file for halo {}".format(halo_name))
         music_config = compose_template(music_template, ellipsoid)
-        if args.create_subdirs and len(ellipsoids) > 1:
+        if args.common_directory and len(ellipsoids) > 1:
             output_file = os.path.join(args.output_path, str(halo_name), "ics.cfg")
         else:
             output_file = os.path.join(
@@ -265,9 +275,9 @@ def process_config(config, args):
     # TODO: Execute MUSIC?
 
 
-def downloadstore_mode(args, target: str):
+def downloadstore_mode(args: Args, target: str):
     logging.info("Fetching download configuration from the cosmICweb server")
-    config = fetch_downloadstore(args.cosmicweb_url, target)
+    config = fetch_downloadstore(args.url, target)
     if args.output_path == "./":
         args.output_path = "./cosmICweb-zooms-{}".format(config.simulation_name)
         logging.debug("Output directory set to " + args.output_path)
@@ -275,11 +285,11 @@ def downloadstore_mode(args, target: str):
     process_config(config, args)
 
 
-def publication_mode(args, publication_name: str, traceback_radius: int):
+def publication_mode(args: Args, publication_name: str, traceback_radius: int):
     logging.info(
-        "Fetching publication " + args.publication_name + " from the cosmICweb server"
+        "Fetching publication " + publication_name + " from the cosmICweb server"
     )
-    config = fetch_publication(args.cosmicweb_url, publication_name, traceback_radius)
+    config = fetch_publication(args.url, publication_name, traceback_radius)
     args.output_path = os.path.join(args.output_path, publication_name)
     logging.debug("Output directory set to " + args.output_path)
     logging.info("Publication successfully fetched")
@@ -312,19 +322,19 @@ def dir_path(p):
 def cli(ctx, url, output_path, common_directory, attempts, verbose):
     if verbose:
         logger.setLevel("DEBUG")
-    ctx.obj = {
-        "url": url,
-        "output_path": output_path,
-        "common_directory": common_directory,
-        "attempts": attempts,
-    }
+    ctx.obj = Args(
+        url=url,
+        output_path=output_path,
+        common_directory=common_directory,
+        attempts=attempts
+    )
 
 
 @cli.command(help="Download ICs using a target UUID generated on cosmICweb")
 @click.argument("target")
 @click.pass_context
 def get(ctx, target):
-    args = ctx.obj
+    args: Args = ctx.obj
     downloadstore_mode(args, target)
 
 
@@ -333,7 +343,7 @@ def get(ctx, target):
 @click.option("--traceback_radius", type=click.Choice([1, 2, 4, 10]), default=2)
 @click.pass_context
 def publication(ctx, publication_name, traceback_radius):
-    args = ctx.obj
+    args: Args = ctx.obj
     publication_mode(args, publication_name, traceback_radius)
 
 
