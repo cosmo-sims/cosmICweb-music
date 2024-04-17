@@ -91,6 +91,7 @@ def fetch_ellipsoids(url, api_token, attempts):
             r.raise_for_status()
         except requests.exceptions.HTTPError as e:
             logging.warning("Failed fetching (attempt {}/{}) ...".format(i, attempts))
+            logging.warning(e)
         else:
             content = r.json()
             return [
@@ -121,8 +122,9 @@ def fetch_downloadstore(cosmicweb_url, target):
         # This will raise an error if not successful
         r.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        logging.critical("Failed downloading from cosmICweb.")
-        sys.exit("Error")
+        logging.critical(f"Failed downloading from cosmICweb.")
+        logging.critical(e)
+        sys.exit(1)
     content = r.json()
     sim = content["simulation"]
     halo_urls = [
@@ -150,7 +152,8 @@ def fetch_publication(cosmicweb_url, publication_name, traceback_radius):
         r.raise_for_status()
     except requests.exceptions.HTTPError as e:
         logging.critical("Failed downloading from cosmICweb.")
-        sys.exit("Error")
+        logging.critical(e)
+        sys.exit(1)
     content = r.json()
     sim = content["simulation"]
     halo_names = [h["name"] for h in content["halos"]]
