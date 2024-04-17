@@ -2,11 +2,10 @@ import os
 import sys
 import tempfile
 import subprocess
-from typing import NamedTuple
+from typing import NamedTuple, Any, List, Dict
 
 import click
 import requests
-from collections import namedtuple
 from datetime import datetime
 import logging
 
@@ -25,22 +24,22 @@ DEFAULT_URL = "https://cosmicweb.eu"
 EDITOR = os.environ.get("EDITOR", "vim")
 
 # Types
-Ellipsoid = namedtuple(
-    "Ellipsoid", ["center", "shape", "traceback_radius", "radius_definition"]
-)
-DownloadConfig = namedtuple(
-    "DownloadConfig",
-    [
-        "simulation_name",
-        "halo_names",
-        "halo_urls",
-        "traceback_radius",
-        "api_token",
-        "MUSIC",
-        "settings",
-        "accessed_at",
-    ],
-)
+class Ellipsoid(NamedTuple):
+    center: int
+    shape: int
+    traceback_radius: int
+    radius_definition: int
+
+
+class DownloadConfig(NamedTuple):
+    simulation_name: str
+    halo_names: List[Any]
+    halo_urls: List[str]
+    traceback_radius: float
+    api_token: str
+    MUSIC: str
+    settings: Dict[Any, Any]
+    accessed_at: datetime
 
 
 class Args(NamedTuple):
@@ -282,7 +281,7 @@ def downloadstore_mode(args: Args, target: str):
     logging.info("Fetching download configuration from the cosmICweb server")
     config = fetch_downloadstore(args.url, target)
     if args.output_path == "./":
-        args.output_path = "./cosmICweb-zooms-{}".format(config.simulation_name)
+        args = args._replace(output_path = "./cosmICweb-zooms-{}".format(config.simulation_name))
         logging.debug("Output directory set to " + args.output_path)
     logging.info("Download configuration successfully fetched")
     process_config(config, args)
@@ -293,7 +292,7 @@ def publication_mode(args: Args, publication_name: str, traceback_radius: int):
         "Fetching publication " + publication_name + " from the cosmICweb server"
     )
     config = fetch_publication(args.url, publication_name, traceback_radius)
-    args.output_path = os.path.join(args.output_path, publication_name)
+    args = args._replace(output_path=os.path.join(args.output_path, publication_name))
     logging.debug("Output directory set to " + args.output_path)
     logging.info("Publication successfully fetched")
     process_config(config, args)
