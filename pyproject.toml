@@ -1,9 +1,20 @@
 [tool.poetry]
 name = "cosmicweb-music"
 version = "0.1.0"
-description = ""
+description = "Script to download initial conditions for zoom-in cosmological simulations from the cosmICweb service."
 authors = ["Michael Buehlmann <buehlmann.michi@gmail.com>"]
+license = "MIT"
 readme = "README.md"
+homepage = "https://github.com/michaelbuehlmann/cosmicweb-music"
+repository = "https://github.com/michaelbuehlmann/cosmicweb-music"
+documentation = "https://github.com/michaelbuehlmann/cosmicweb-music"
+include = ["LICENSE"]
+keywords = ["scientific computing"]
+classifiers = [
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering",
+    "Intended Audience :: Science/Research",
+]
 
 [tool.poetry.scripts]
 cosmicweb-music = "cosmicweb_music.cosmICweb:cli"
@@ -17,3 +28,9 @@ requests = "^2.31.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ["py38"]
+include = '\.pyi?$'
+exclude = '\.git|\.venv|build|_build|dist'
