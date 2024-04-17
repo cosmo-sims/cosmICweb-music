@@ -23,6 +23,7 @@ logger.setLevel("INFO")
 DEFAULT_URL = "https://cosmicweb.eu"
 EDITOR = os.environ.get("EDITOR", "vim")
 
+
 # Types
 class Ellipsoid(NamedTuple):
     center: int
@@ -47,7 +48,6 @@ class Args(NamedTuple):
     output_path: str
     common_directory: str
     attempts: int
-
 
 
 def query_yes_no(question, default="yes"):
@@ -281,7 +281,7 @@ def downloadstore_mode(args: Args, target: str):
     logging.info("Fetching download configuration from the cosmICweb server")
     config = fetch_downloadstore(args.url, target)
     if args.output_path == "./":
-        args = args._replace(output_path = "./cosmICweb-zooms-{}".format(config.simulation_name))
+        args = args._replace(output_path=f"./cosmICweb-zooms-{config.simulation_name}")
         logging.debug("Output directory set to " + args.output_path)
     logging.info("Download configuration successfully fetched")
     process_config(config, args)
@@ -328,7 +328,7 @@ def cli(ctx, url, output_path, common_directory, attempts, verbose):
         url=url,
         output_path=output_path,
         common_directory=common_directory,
-        attempts=attempts
+        attempts=attempts,
     )
 
 
