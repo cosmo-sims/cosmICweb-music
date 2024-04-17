@@ -21,7 +21,7 @@ logger.addHandler(handler)
 logger.setLevel("INFO")
 
 # Some constants
-DEFAULT_URL = "https://cosmicweb.astro.univie.ac.at"
+DEFAULT_URL = "https://cosmicweb.eu"
 EDITOR = os.environ.get("EDITOR", "vim")
 
 # Types
