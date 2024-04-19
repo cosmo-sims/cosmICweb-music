@@ -265,7 +265,7 @@ def process_config(config, args: Args):
             output_file = os.path.join(args.output_path, str(halo_name), "ics.cfg")
         else:
             output_file = os.path.join(
-                args.output_path, "/ics_{}.cfg".format(halo_name)
+                args.output_path, "ics_{}.cfg".format(halo_name)
             )
         logging.info(
             "Storing MUSIC configuration file for halo {} in {}".format(
