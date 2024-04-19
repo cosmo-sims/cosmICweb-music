@@ -197,10 +197,10 @@ def music_config_to_template(music_config, configuration):
 
 def compose_template(template, ellipsoid):
     # TODO: add ellipsoid header (rtb, halo_name, etc)
-    shape_0 = ", ".join("{:13.6e}".format(e) for e in ellipsoid.shape[0])
-    shape_1 = ", ".join("{:13.6e}".format(e) for e in ellipsoid.shape[1])
-    shape_2 = ", ".join("{:13.6e}".format(e) for e in ellipsoid.shape[2])
-    center = ", ".join("{:13.6e}".format(x) for x in ellipsoid.center)
+    shape_0 = ", ".join(str(e) for e in ellipsoid.shape[0])
+    shape_1 = ", ".join(str(e) for e in ellipsoid.shape[1])
+    shape_2 = ", ".join(str(e) for e in ellipsoid.shape[2])
+    center = ", ".join(str(x) for x in ellipsoid.center)
 
     ellipsoid_lines = (
         "region = ellipsoid\n"
