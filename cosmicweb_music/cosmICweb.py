@@ -188,10 +188,10 @@ def edit_template(template):
 def music_config_to_template(music_config, configuration):
     # TODO: apply configuraton, add header
     return (
-        "[SETUP]\n" + music_config["setup"] + "\n\n<ELLIPSOID_TEMPLATE>\n\n"
-        "[COSMOLOGY]\n" + music_config["cosmology"] + "\n\n"
-        "[RANDOM]\n" + music_config["random"] + "\n\n"
-        "[POISSON]\n" + music_config["poisson"]
+        "[setup]\n" + music_config["setup"] + "\n\n<ELLIPSOID_TEMPLATE>\n\n"
+        "[cosmology]\n" + music_config["cosmology"] + "\n\n"
+        "[random]\n" + music_config["random"] + "\n\n"
+        "[poisson]\n" + music_config["poisson"]
     )
 
 
