@@ -22,6 +22,7 @@ logger.setLevel("INFO")
 # Some constants
 DEFAULT_URL = "https://cosmicweb.eu"
 EDITOR = os.environ.get("EDITOR", "vim")
+EDITOR_IS_VIM = EDITOR in {"vim", "nvim"}
 
 
 # Types
@@ -181,11 +182,14 @@ def fetch_publication(cosmicweb_url, publication_name, traceback_radius):
 
 
 def edit_template(template):
-    with tempfile.NamedTemporaryFile(suffix=".tmp", mode="r+") as tf:
+    with tempfile.NamedTemporaryFile(suffix=".tmp.conf", mode="r+") as tf:
         tf.write(template)
         tf.flush()
-        # Call the editor. backupcopy=yes prevents vim from creating copy and rename
-        subprocess.call([EDITOR, "+set backupcopy=yes", tf.name])
+        editor_parameters = []
+        if EDITOR_IS_VIM:
+            # backupcopy=yes prevents vim from creating copy and rename
+            editor_parameters.append("+set backupcopy=yes")
+        subprocess.call([EDITOR] + editor_parameters + [tf.name])
         tf.seek(0)
         template = tf.read()
     return template
