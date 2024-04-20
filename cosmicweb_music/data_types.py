@@ -26,6 +26,13 @@ class Configuration(TypedDict):
     tracebackRadius: int | float | str
 
 
+class ICSections(TypedDict):
+    setup: str
+    random: str
+    cosmology: str
+    poisson: str
+
+
 class DownloadConfig(NamedTuple):
     simulation_name: str
     project_name: str
@@ -34,7 +41,7 @@ class DownloadConfig(NamedTuple):
     halo_urls: List[str]
     traceback_radius: float
     api_token: str
-    MUSIC: Dict[str, str]
+    MUSIC: ICSections
     settings: Configuration | None
     accessed_at: datetime
 
@@ -42,5 +49,5 @@ class DownloadConfig(NamedTuple):
 class Args(NamedTuple):
     url: str
     output_path: str
-    common_directory: str
+    common_directory: bool
     attempts: int
