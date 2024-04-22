@@ -1,5 +1,5 @@
 [tool.poetry]
-version = "0.1.0"
+version = "0.2.0"
 name = "cosmicweb-music"
 description = "Script to download initial conditions for zoom-in cosmological simulations from the cosmICweb service."
 authors = [
@@ -20,7 +20,7 @@ classifiers = [
 ]
 
 [tool.bumpversion]
-current_version = "0.1.0"
+current_version = "0.2.0"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
 serialize = ["{major}.{minor}.{patch}"]
 search = "{current_version}"
