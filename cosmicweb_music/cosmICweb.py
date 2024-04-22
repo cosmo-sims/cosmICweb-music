@@ -85,7 +85,7 @@ def fetch_ellipsoids(url: str, api_token: str, attempts: int) -> list[Ellipsoid]
 
 
 def fetch_ellipsoid(
-    url: str, api_token: str, traceback_radius:float, attempts: int = 3
+    url: str, api_token: str, traceback_radius: float, attempts: int = 3
 ) -> Ellipsoid | None:
     ellipsoids = fetch_ellipsoids(url, api_token, attempts)
     if ellipsoids:
@@ -351,7 +351,11 @@ def dir_path(p: str) -> str:
     default="./",
     help="Download target for IC files. If downloading publication, will create a subfolder with the name of the publication",
 )
-@click.option("--common-directory", is_flag=True)
+@click.option(
+    "--common-directory",
+    is_flag=True,
+    help="store all config files in the same directory instead of individual directories for each halo",
+)
 @click.option(
     "--attempts", type=int, default=3, help="number of attempts to download ellipsoids"
 )
