@@ -382,9 +382,12 @@ def get(ctx, target):
 
 @cli.command(help="Download published ICs using the publication name")
 @click.argument("publication_name")
-@click.option("--traceback_radius", type=click.Choice([1, 2, 4, 10]), default=2)
+@click.option(
+    "--traceback_radius", type=click.Choice(["1", "2", "4", "10"]), default="2"
+)
 @click.pass_context
 def publication(ctx, publication_name, traceback_radius):
+    traceback_radius = float(traceback_radius)
     args: Args = ctx.obj
     publication_mode(args, publication_name, traceback_radius)
 
