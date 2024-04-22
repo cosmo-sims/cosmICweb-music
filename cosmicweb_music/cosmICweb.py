@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import os
 import sys
 import tempfile
 import subprocess
-from typing import NamedTuple, Any, List, Dict
+from typing import Any
+from .data_types import Ellipsoid, Args, DownloadConfig
 
 import click
 import requests
@@ -22,35 +25,10 @@ logger.setLevel("INFO")
 # Some constants
 DEFAULT_URL = "https://cosmicweb.eu"
 EDITOR = os.environ.get("EDITOR", "vim")
+EDITOR_IS_VIM = EDITOR in {"vim", "nvim"}
 
 
-# Types
-class Ellipsoid(NamedTuple):
-    center: int
-    shape: int
-    traceback_radius: int
-    radius_definition: int
-
-
-class DownloadConfig(NamedTuple):
-    simulation_name: str
-    halo_names: List[Any]
-    halo_urls: List[str]
-    traceback_radius: float
-    api_token: str
-    MUSIC: str
-    settings: Dict[Any, Any]
-    accessed_at: datetime
-
-
-class Args(NamedTuple):
-    url: str
-    output_path: str
-    common_directory: str
-    attempts: int
-
-
-def query_yes_no(question, default="yes"):
+def query_yes_no(question: str, default="yes") -> bool:
     """Ask a yes/no question via raw_input() and return their answer.
 
     "question" is a string that is presented to the user.
@@ -82,7 +60,7 @@ def query_yes_no(question, default="yes"):
 
 
 # Routines
-def fetch_ellipsoids(url, api_token, attempts):
+def fetch_ellipsoids(url: str, api_token: str, attempts: int) -> list[Ellipsoid]:
     for i in range(attempts):
         try:
             r = requests.get(url, headers={"Authorization": "Token " + api_token})
@@ -103,19 +81,21 @@ def fetch_ellipsoids(url, api_token, attempts):
                 for e in content
             ]
     logging.error("Unable to download ellipsoids from {}".format(url))
-    return None
+    return []
 
 
-def fetch_ellipsoid(url, api_token, traceback_radius, attempts=3):
+def fetch_ellipsoid(
+    url: str, api_token: str, traceback_radius:float, attempts: int = 3
+) -> Ellipsoid | None:
     ellipsoids = fetch_ellipsoids(url, api_token, attempts)
-    if ellipsoids is not None:
+    if ellipsoids:
         return next(
             (e for e in ellipsoids if e.traceback_radius == traceback_radius), None
         )
     return None
 
 
-def fetch_downloadstore(cosmicweb_url, target):
+def fetch_downloadstore(cosmicweb_url: str, target: str) -> DownloadConfig:
     try:
         r = requests.get(cosmicweb_url + "/api/music/store/" + target)
         # This will raise an error if not successful
@@ -134,7 +114,9 @@ def fetch_downloadstore(cosmicweb_url, target):
     ]
     return DownloadConfig(
         simulation_name=sim["name"],
+        project_name=sim["project_name"],
         halo_names=["halo_{}".format(h) for h in content["halos"]],
+        halo_ids=content["halos"],
         halo_urls=halo_urls,
         traceback_radius=content["traceback_radius"],
         api_token=sim["api_token"],
@@ -144,7 +126,9 @@ def fetch_downloadstore(cosmicweb_url, target):
     )
 
 
-def fetch_publication(cosmicweb_url, publication_name, traceback_radius):
+def fetch_publication(
+    cosmicweb_url: str, publication_name: str, traceback_radius
+) -> DownloadConfig:
     try:
         r = requests.get(cosmicweb_url + "/api/publications/" + publication_name)
         # This will raise an error if not successful
@@ -156,6 +140,7 @@ def fetch_publication(cosmicweb_url, publication_name, traceback_radius):
     content = r.json()
     sim = content["simulation"]
     halo_names = [h["name"] for h in content["halos"]]
+    halo_ids = [h["id"] for h in content["halos"]]
     halo_urls = [
         "{url}/simulation/{sid}/halo/{hid}".format(
             url=sim["api_url"], sid=sim["api_id"], hid=h["id"]
@@ -164,38 +149,73 @@ def fetch_publication(cosmicweb_url, publication_name, traceback_radius):
     ]
     return DownloadConfig(
         simulation_name=sim["name"],
+        project_name=sim["project_name"],
         halo_names=halo_names,
+        halo_ids=halo_ids,
         halo_urls=halo_urls,
         traceback_radius=traceback_radius,
         api_token=sim["api_token"],
         MUSIC=sim["ics"],
-        settings={},
+        settings=None,
         accessed_at=datetime.now(),
     )
 
 
-def edit_template(template):
-    with tempfile.NamedTemporaryFile(suffix=".tmp", mode="r+") as tf:
+def edit_template(template: str) -> str:
+    with tempfile.NamedTemporaryFile(suffix=".tmp.conf", mode="r+") as tf:
         tf.write(template)
         tf.flush()
-        # Call the editor. backupcopy=yes prevents vim from creating copy and rename
-        subprocess.call([EDITOR, "+set backupcopy=yes", tf.name])
+        editor_parameters = []
+        if EDITOR_IS_VIM:
+            # backupcopy=yes prevents vim from creating copy and rename
+            editor_parameters.append("+set backupcopy=yes")
+        subprocess.call([EDITOR] + editor_parameters + [tf.name])
         tf.seek(0)
         template = tf.read()
     return template
 
 
-def music_config_to_template(music_config, configuration):
-    # TODO: apply configuraton, add header
-    return (
+def apply_config_parameter(config: str, parameters: dict[str, Any]) -> str:
+    new_lines = []
+    for line in config.split("\n"):
+        param = line.split("=")[0].strip()
+        if param in parameters:
+            line = line.split("=")[0] + f"= {parameters[param]}"
+        new_lines.append(line)
+    return "\n".join(new_lines)
+
+
+def music_config_to_template(config: DownloadConfig) -> str:
+    music_config = config.MUSIC
+    settings = config.settings
+    # TODO: apply output configuration
+    config = (
         "[setup]\n" + music_config["setup"] + "\n\n<ELLIPSOID_TEMPLATE>\n\n"
         "[cosmology]\n" + music_config["cosmology"] + "\n\n"
         "[random]\n" + music_config["random"] + "\n\n"
         "[poisson]\n" + music_config["poisson"]
     )
+    if settings:
+        config = apply_config_parameter(
+            config,
+            {
+                "levelmin": settings["resolution"]["low"],
+                "levelmin_TF": settings["resolution"]["low"],
+                "levelmax": settings["resolution"]["high"],
+                "zstart": settings["startRedshift"],
+            },
+        )
+    return config
 
 
-def compose_template(template, ellipsoid):
+def compose_template(
+    template: str,
+    ellipsoid: Ellipsoid,
+    config: DownloadConfig,
+    halo_name: str,
+    halo_id: int,
+    now: datetime = None,
+) -> str:
     # TODO: add ellipsoid header (rtb, halo_name, etc)
     shape_0 = ", ".join(str(e) for e in ellipsoid.shape[0])
     shape_1 = ", ".join(str(e) for e in ellipsoid.shape[1])
@@ -203,18 +223,27 @@ def compose_template(template, ellipsoid):
     center = ", ".join(str(x) for x in ellipsoid.center)
 
     ellipsoid_lines = (
+        "# Ellipsoidal refinement region defined on unity cube\n"
+        "# This minimum bounding ellipsoid has been obtained from\n"
+        f"# particles within {ellipsoid.traceback_radius} {ellipsoid.radius_definition} of the halo center\n"
         "region = ellipsoid\n"
-        "region_ellipsoid_matrix[0] = {s0}\n"
-        "region_ellipsoid_matrix[1] = {s1}\n"
-        "region_ellipsoid_matrix[2] = {s2}\n"
-        "region_ellipsoid_center    = {c}\n".format(
-            s0=shape_0, s1=shape_1, s2=shape_2, c=center
-        )
+        f"region_ellipsoid_matrix[0] = {shape_0}\n"
+        f"region_ellipsoid_matrix[1] = {shape_1}\n"
+        f"region_ellipsoid_matrix[2] = {shape_2}\n"
+        f"region_ellipsoid_center    = {center}\n"
     )
-    return template.replace("<ELLIPSOID_TEMPLATE>", ellipsoid_lines)
+    template = template.replace("<ELLIPSOID_TEMPLATE>", ellipsoid_lines)
+    if now is None:
+        now = datetime.now()
+    config_header = (
+        f"# Zoom Initial Conditions for halo {halo_id} ({halo_name}) in simulation {config.simulation_name} ({config.project_name} project)\n"
+        f"# Details on this halo can be found on https://cosmicweb.eu/simulation/{config.simulation_name}/halo/{halo_id}\n"
+        f"# This file has been generated by CosmICweb @{now.isoformat()}\n\n\n"
+    )
+    return config_header + template + "\n"
 
 
-def write_music_file(output_file, music_config):
+def write_music_file(output_file: str, music_config: str) -> None:
     dirname = os.path.dirname(output_file)
     if not os.path.exists(dirname):
         logging.debug("Creating directory {}".format(dirname))
@@ -223,11 +252,11 @@ def write_music_file(output_file, music_config):
         f.write(music_config)
 
 
-def call_music():
+def call_music() -> None:
     pass
 
 
-def process_config(config, args: Args):
+def process_config(config: DownloadConfig, args: Args, store: bool) -> None:
     ellipsoids = []
     for halo_name, url in zip(config.halo_names, config.halo_urls):
         logging.info("Fetching ellipsoids from halo " + halo_name)
@@ -239,12 +268,12 @@ def process_config(config, args: Args):
                 args.attempts,
             )
         )
-
     # Edit template
     logging.info("Creating MUSIC template")
-    music_template = music_config_to_template(config.MUSIC, config.settings)
+    music_template = music_config_to_template(config)
+    output = []
 
-    if query_yes_no(
+    if store and query_yes_no(
         "Do you want to edit the MUSIC template before creating the IC files?\n"
         "(changing zstart, levelmin, levelmax, etc.)",
         default="no",
@@ -253,41 +282,48 @@ def process_config(config, args: Args):
         music_template = edit_template(music_template)
         logging.debug("Finished editing MUSIC template")
     # Store template to file
-    for halo_name, ellipsoid in zip(config.halo_names, ellipsoids):
+    for halo_name, halo_id, ellipsoid in zip(
+        config.halo_names, config.halo_ids, ellipsoids
+    ):
         if ellipsoid is None:
             logging.warning(
                 "Ellipsoid for halo {} not available, skipping".format(halo_name)
             )
             continue
         logging.info("Composing MUSIC configuration file for halo {}".format(halo_name))
-        music_config = compose_template(music_template, ellipsoid)
+        music_config = compose_template(
+            music_template, ellipsoid, config, halo_name, halo_id
+        )
         if args.common_directory and len(ellipsoids) > 1:
             output_file = os.path.join(args.output_path, str(halo_name), "ics.cfg")
         else:
-            output_file = os.path.join(
-                args.output_path, "ics_{}.cfg".format(halo_name)
-            )
+            output_file = os.path.join(args.output_path, "ics_{}.cfg".format(halo_name))
         logging.info(
             "Storing MUSIC configuration file for halo {} in {}".format(
                 halo_name, output_file
             )
         )
-        write_music_file(output_file, music_config)
-
+        if store:
+            write_music_file(output_file, music_config)
+        else:
+            output.append((output_file, music_config))
+    return output
     # TODO: Execute MUSIC?
 
 
-def downloadstore_mode(args: Args, target: str):
+def downloadstore_mode(args: Args, target: str, store=True) -> None | str:
     logging.info("Fetching download configuration from the cosmICweb server")
     config = fetch_downloadstore(args.url, target)
     if args.output_path == "./":
         args = args._replace(output_path=f"./cosmICweb-zooms-{config.simulation_name}")
         logging.debug("Output directory set to " + args.output_path)
     logging.info("Download configuration successfully fetched")
-    process_config(config, args)
+    return process_config(config, args, store)
 
 
-def publication_mode(args: Args, publication_name: str, traceback_radius: int):
+def publication_mode(
+    args: Args, publication_name: str, traceback_radius, store=True
+) -> None | str:
     logging.info(
         "Fetching publication " + publication_name + " from the cosmICweb server"
     )
@@ -295,10 +331,10 @@ def publication_mode(args: Args, publication_name: str, traceback_radius: int):
     args = args._replace(output_path=os.path.join(args.output_path, publication_name))
     logging.debug("Output directory set to " + args.output_path)
     logging.info("Publication successfully fetched")
-    process_config(config, args)
+    return process_config(config, args, store)
 
 
-def dir_path(p):
+def dir_path(p: str) -> str:
     if os.path.isdir(p):
         return p
     else:
@@ -351,54 +387,3 @@ def publication(ctx, publication_name, traceback_radius):
 
 if __name__ == "__main__":
     cli()
-
-# if __name__ == "__main__":
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument(
-#         "--url",
-#         dest="cosmicweb_url",
-#         default=DEFAULT_URL,
-#         help="overwrite URL of the cosmicweb server",
-#     )
-#     parser.add_argument(
-#         "--output-path",
-#         type=dir_path,
-#         default="./",
-#         help="Download target for IC files. If downloading publication, will create a subfolder with the "
-#         "name of the publication",
-#     )
-#     parser.add_argument(
-#         "--common-directory", dest="create_subdirs", action="store_false"
-#     )
-#     parser.add_argument(
-#         "--attempts",
-#         type=int,
-#         default=3,
-#         help="number of attempts to download ellipsoids",
-#     )
-#     parser.add_argument("--verbose", action="store_true")
-
-#     subparsers = parser.add_subparsers(dest="mode")
-#     # Downloading from publications
-#     publication_parser = subparsers.add_parser(
-#         "publication", help="download publications"
-#     )
-#     publication_parser.add_argument("publication_name", help="name of the publication")
-#     publication_parser.add_argument(
-#         "--traceback_radius", type=int, choices=[1, 2, 4, 10], default=2, help=""
-#     )
-#     # Downloading from download object
-#     download_parser = subparsers.add_parser("get")
-#     download_parser.add_argument("target")
-
-#     args = parser.parse_args()
-
-#     if args.verbose:
-#         logger.setLevel("DEBUG")
-
-#     if args.mode == "get":
-#         downloadstore_mode(args)
-#     elif args.mode == "publication":
-#         publication_mode(args)
-#     else:
-#         raise NotImplementedError("unknown subparser")
