@@ -193,7 +193,7 @@ def music_config_to_template(config: DownloadConfig) -> str:
         "[setup]\n" + music_config["setup"] + "\n\n<ELLIPSOID_TEMPLATE>\n\n"
         "[cosmology]\n" + music_config["cosmology"] + "\n\n"
         "[random]\n" + music_config["random"] + "\n\n"
-        "[poisson]\n" + music_config["poisson"]
+        "[poisson]\n" + music_config["poisson"] + "\n\n"
     )
     if settings:
         config = apply_config_parameter(
@@ -205,6 +205,18 @@ def music_config_to_template(config: DownloadConfig) -> str:
                 "zstart": settings["startRedshift"],
             },
         )
+        if settings["outputType"]:
+            config += f"""
+[output]
+format = {settings["outputType"]}
+filename = {settings["outputFilename"]}
+            """.strip()
+            config += "\n"
+            for k, v in settings["outputOptions"]:
+                config += f"{k} = {v}\n"
+    if not settings or not settings["outputType"]:
+        # TODO: allow specifying output format via cli argument
+        config += "[output]\n# TODO: add output options"
     return config
 
 

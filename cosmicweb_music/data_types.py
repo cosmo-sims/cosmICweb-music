@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import NamedTuple, Any, List, Dict, TypedDict
+from typing import NamedTuple, Any, List, Dict, TypedDict, Tuple
 
 
 class Ellipsoid(NamedTuple):
@@ -19,7 +19,7 @@ class Resolution(TypedDict):
 class Configuration(TypedDict):
     outputType: str
     resolution: Resolution
-    outputOptions: List[Any]
+    outputOptions: List[Tuple[str, str]]
     startRedshift: int
     outputFilename: str
     separateFolders: bool
