@@ -7,7 +7,7 @@ from cosmicweb_music.cosmICweb import (
     DEFAULT_URL,
     compose_template,
 )
-from cosmicweb_music.data_types import DownloadConfig, Args, Ellipsoid
+from cosmicweb_music.data_types import DownloadConfig, Args, Ellipsoid, Configuration
 
 some_config = """
 [setup]
@@ -40,7 +40,31 @@ baryons     = no  # switch on for baryon runs
 use_2LPT    = no
 use_LLA     = no  # AMR codes might want to enable this
 """.strip()
-
+settings:Configuration={
+    "outputType": "grafic2",
+    "resolution": {
+        "low": 7,
+        "high": 11
+    },
+    "outputOptions": [
+        (
+            "ramses_nml",
+            "yes"
+        ),
+        (
+            "ramses_old_nml",
+            "no"
+        ),
+        (
+            "ramses_pvar_idx",
+            "43"
+        )
+    ],
+    "startRedshift": 100,
+    "outputFilename": "ics.dat",
+    "seperateFolders": True,
+    "tracebackRadius": 4
+}
 config = DownloadConfig(
     simulation_name="test",
     project_name="project",
@@ -50,7 +74,7 @@ config = DownloadConfig(
     traceback_radius=10,
     api_token="...",
     MUSIC={"cosmology": "", "poisson": "", "random": "", "setup": ""},
-    settings=None,
+    settings=settings,
     accessed_at=datetime.now(),
 )
 
@@ -92,6 +116,14 @@ region_ellipsoid_center    = 0.42174551551333334, 0.42890526632, 0.2797593877600
 
 
 [poisson]
+
+
+[output]
+format = grafic2
+filename = ics.dat
+ramses_nml = yes
+ramses_old_nml = no
+ramses_pvar_idx = 43
 
 """.lstrip()
 

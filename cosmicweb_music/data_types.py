@@ -22,7 +22,7 @@ class Configuration(TypedDict):
     outputOptions: List[Tuple[str, str]]
     startRedshift: int
     outputFilename: str
-    separateFolders: bool
+    seperateFolders: bool
     tracebackRadius: int | float | str
 
 
