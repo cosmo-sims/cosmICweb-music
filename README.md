@@ -24,6 +24,7 @@ Options:
   --help                  Show this message and exit.
 
 Commands:
+  collection   Download shared ICs using the collection UUID
   get          Download ICs using a target UUID generated on cosmICweb
   publication  Download published ICs using the publication name
 ```
@@ -33,4 +34,7 @@ cosmicweb-music publication agora-halos
 ```
 ```bash
 cosmicweb-music get f5399734-ad67-432b-ba4d-61bc2088136a
+```
+```bash
+cosmicweb-music collection c30de0f3-ab4d-48ad-aa26-f20bb4b70bbd
 ```

@@ -126,11 +126,20 @@ def fetch_downloadstore(cosmicweb_url: str, target: str) -> DownloadConfig:
     )
 
 
-def fetch_publication(
-    cosmicweb_url: str, publication_name: str, traceback_radius
+def fetch_multiple(
+    cosmicweb_url: str,
+    traceback_radius,
+    publication_name: str = None,
+    collection_uuid: str = None,
 ) -> DownloadConfig:
+    if publication_name:
+        url = f"{cosmicweb_url}/api/publications/{publication_name}"
+    elif collection_uuid:
+        url = f"{cosmicweb_url}/api/collections/{collection_uuid}"
+    else:
+        raise ValueError("must provide either publication_name or collection_uuid")
     try:
-        r = requests.get(cosmicweb_url + "/api/publications/" + publication_name)
+        r = requests.get(url)
         # This will raise an error if not successful
         r.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -139,7 +148,12 @@ def fetch_publication(
         sys.exit(1)
     content = r.json()
     sim = content["simulation"]
-    halo_names = [h["name"] for h in content["halos"]]
+    halo_names = []
+    for h in content["halos"]:
+        name = h["name"]
+        if name is None:
+            name = str(h["id"])
+        halo_names.append(name)
     halo_ids = [h["id"] for h in content["halos"]]
     halo_urls = [
         "{url}/simulation/{sid}/halo/{hid}".format(
@@ -185,8 +199,14 @@ def apply_config_parameter(config: str, parameters: dict[str, Any]) -> str:
     return "\n".join(new_lines)
 
 
+def normalize_lineendings(text: str) -> str:
+    return text.replace("\r\n", "\n")
+
+
 def music_config_to_template(config: DownloadConfig) -> str:
     music_config = config.MUSIC
+    music_config = {k: normalize_lineendings(v) for k, v in music_config.items()}
+
     settings = config.settings
     # TODO: apply output configuration
     config = (
@@ -336,13 +356,27 @@ def downloadstore_mode(args: Args, target: str, store=True) -> None | str:
 def publication_mode(
     args: Args, publication_name: str, traceback_radius, store=True
 ) -> None | str:
-    logging.info(
-        "Fetching publication " + publication_name + " from the cosmICweb server"
+    logging.info(f"Fetching publication {publication_name} from the cosmICweb server")
+    config = fetch_multiple(
+        args.url, traceback_radius, publication_name=publication_name
     )
-    config = fetch_publication(args.url, publication_name, traceback_radius)
     args = args._replace(output_path=os.path.join(args.output_path, publication_name))
     logging.debug("Output directory set to " + args.output_path)
     logging.info("Publication successfully fetched")
+    return process_config(config, args, store)
+
+
+def collection_mode(
+    args: Args, collection_uuid: str, traceback_radius, store=True
+) -> None | str:
+    logging.info(f"Fetching collection {collection_uuid} from the cosmICweb server")
+    config = fetch_multiple(args.url, traceback_radius, collection_uuid=collection_uuid)
+    args = args._replace(
+        output_path=os.path.join(args.output_path, config.simulation_name)
+    )
+    logging.debug("Output directory set to " + args.output_path)
+    logging.info("Publication successfully fetched")
+    print(config)
     return process_config(config, args, store)
 
 
@@ -402,6 +436,18 @@ def publication(ctx, publication_name, traceback_radius):
     traceback_radius = float(traceback_radius)
     args: Args = ctx.obj
     publication_mode(args, publication_name, traceback_radius)
+
+
+@cli.command(help="Download shared ICs using the collection UUID")
+@click.argument("collection")
+@click.option(
+    "--traceback_radius", type=click.Choice(["1", "2", "4", "10"]), default="2"
+)
+@click.pass_context
+def collection(ctx, collection, traceback_radius):
+    traceback_radius = float(traceback_radius)
+    args: Args = ctx.obj
+    collection_mode(args, collection, traceback_radius)
 
 
 if __name__ == "__main__":
