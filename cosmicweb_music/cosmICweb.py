@@ -24,8 +24,6 @@ logger.setLevel("INFO")
 
 # Some constants
 DEFAULT_URL = "https://cosmicweb.eu"
-EDITOR = os.environ.get("EDITOR", "vim")
-EDITOR_IS_VIM = EDITOR in {"vim", "nvim"}
 
 
 def query_yes_no(question: str, default="yes") -> bool:
@@ -176,17 +174,10 @@ def fetch_multiple(
 
 
 def edit_template(template: str) -> str:
-    with tempfile.NamedTemporaryFile(suffix=".tmp.conf", mode="r+") as tf:
-        tf.write(template)
-        tf.flush()
-        editor_parameters = []
-        if EDITOR_IS_VIM:
-            # backupcopy=yes prevents vim from creating copy and rename
-            editor_parameters.append("+set backupcopy=yes")
-        subprocess.call([EDITOR] + editor_parameters + [tf.name])
-        tf.seek(0)
-        template = tf.read()
-    return template
+    return_value = click.edit(template, extension=".conf")
+    if return_value is None:
+        return template
+    return return_value
 
 
 def apply_config_parameter(config: str, parameters: dict[str, Any]) -> str:
