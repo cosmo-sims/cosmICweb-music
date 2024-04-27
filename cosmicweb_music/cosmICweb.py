@@ -388,6 +388,7 @@ def dir_path(p: str) -> str:
 
 
 @click.group()
+@click.version_option()
 @click.option(
     "--url", default=DEFAULT_URL, help="overwrite URL of the cosmICweb server"
 )
