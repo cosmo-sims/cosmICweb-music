@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import os
 import sys
-import tempfile
-import subprocess
 from typing import Any
 from .data_types import Ellipsoid, Args, DownloadConfig
 
@@ -26,38 +24,6 @@ logger.setLevel("INFO")
 DEFAULT_URL = "https://cosmicweb.eu"
 
 
-def query_yes_no(question: str, default="yes") -> bool:
-    """Ask a yes/no question via raw_input() and return their answer.
-
-    "question" is a string that is presented to the user.
-    "default" is the presumed answer if the user just hits <Enter>.
-        It must be "yes" (the default), "no" or None (meaning
-        an answer is required of the user).
-
-    The "answer" return value is True for "yes" or False for "no".
-    """
-    valid = {"yes": True, "y": True, "ye": True, "no": False, "n": False}
-    if default is None:
-        prompt = " [y/n] "
-    elif default == "yes":
-        prompt = " [Y/n] "
-    elif default == "no":
-        prompt = " [y/N] "
-    else:
-        raise ValueError("invalid default answer: '%s'" % default)
-
-    while True:
-        sys.stdout.write(question + prompt)
-        choice = input().lower()
-        if default is not None and choice == "":
-            return valid[default]
-        elif choice in valid:
-            return valid[choice]
-        else:
-            sys.stdout.write("Please respond with 'yes' or 'no' " "(or 'y' or 'n').\n")
-
-
-# Routines
 def fetch_ellipsoids(url: str, api_token: str, attempts: int) -> list[Ellipsoid]:
     for i in range(attempts):
         try:
@@ -296,10 +262,10 @@ def process_config(config: DownloadConfig, args: Args, store: bool) -> None:
     music_template = music_config_to_template(config)
     output = []
 
-    if store and query_yes_no(
+    if store and click.confirm(
         "Do you want to edit the MUSIC template before creating the IC files?\n"
         "(changing zstart, levelmin, levelmax, etc.)",
-        default="no",
+        default=False,
     ):
         logging.debug("Editing MUSIC template")
         music_template = edit_template(music_template)
