@@ -3,6 +3,9 @@ from __future__ import annotations
 import os
 import sys
 from typing import Any
+
+from click import Context
+
 from .data_types import Ellipsoid, Args, DownloadConfig
 
 import click
@@ -245,7 +248,7 @@ def call_music() -> None:
     pass
 
 
-def process_config(config: DownloadConfig, args: Args, store: bool) -> None:
+def process_config(config: DownloadConfig, args: Args) -> None:
     ellipsoids = []
     for halo_name, url in zip(config.halo_names, config.halo_urls):
         logging.info("Fetching ellipsoids from halo " + halo_name)
@@ -262,7 +265,7 @@ def process_config(config: DownloadConfig, args: Args, store: bool) -> None:
     music_template = music_config_to_template(config)
     output = []
 
-    if store and click.confirm(
+    if click.confirm(
         "Do you want to edit the MUSIC template before creating the IC files?\n"
         "(changing zstart, levelmin, levelmax, etc.)",
         default=False,
@@ -292,27 +295,21 @@ def process_config(config: DownloadConfig, args: Args, store: bool) -> None:
                 halo_name, output_file
             )
         )
-        if store:
-            write_music_file(output_file, music_config)
-        else:
-            output.append((output_file, music_config))
-    return output
+        write_music_file(output_file, music_config)
     # TODO: Execute MUSIC?
 
 
-def downloadstore_mode(args: Args, target: str, store=True) -> None | str:
+def downloadstore_mode(args: Args, target: str) -> None | str:
     logging.info("Fetching download configuration from the cosmICweb server")
     config = fetch_downloadstore(args.url, target)
     if args.output_path == "./":
         args = args._replace(output_path=f"./cosmICweb-zooms-{config.simulation_name}")
         logging.debug("Output directory set to " + args.output_path)
     logging.info("Download configuration successfully fetched")
-    return process_config(config, args, store)
+    return process_config(config, args)
 
 
-def publication_mode(
-    args: Args, publication_name: str, traceback_radius, store=True
-) -> None | str:
+def publication_mode(args: Args, publication_name: str, traceback_radius) -> None | str:
     logging.info(f"Fetching publication {publication_name} from the cosmICweb server")
     config = fetch_multiple(
         args.url, traceback_radius, publication_name=publication_name
@@ -320,12 +317,10 @@ def publication_mode(
     args = args._replace(output_path=os.path.join(args.output_path, publication_name))
     logging.debug("Output directory set to " + args.output_path)
     logging.info("Publication successfully fetched")
-    return process_config(config, args, store)
+    return process_config(config, args)
 
 
-def collection_mode(
-    args: Args, collection_uuid: str, traceback_radius, store=True
-) -> None | str:
+def collection_mode(args: Args, collection_uuid: str, traceback_radius) -> None | str:
     logging.info(f"Fetching collection {collection_uuid} from the cosmICweb server")
     config = fetch_multiple(args.url, traceback_radius, collection_uuid=collection_uuid)
     args = args._replace(
@@ -334,7 +329,7 @@ def collection_mode(
     logging.debug("Output directory set to " + args.output_path)
     logging.info("Publication successfully fetched")
     print(config)
-    return process_config(config, args, store)
+    return process_config(config, args)
 
 
 def dir_path(p: str) -> str:
