@@ -3,7 +3,6 @@ from datetime import datetime
 from cosmicweb_music.cosmICweb import (
     apply_config_parameter,
     music_config_to_template,
-    process_config,
     DEFAULT_URL,
     compose_template,
 )
@@ -40,31 +39,21 @@ baryons     = no  # switch on for baryon runs
 use_2LPT    = no
 use_LLA     = no  # AMR codes might want to enable this
 """.strip()
-settings:Configuration={
+
+settings: Configuration = {
     "outputType": "grafic2",
-    "resolution": {
-        "low": 7,
-        "high": 11
-    },
+    "resolution": {"low": 7, "high": 11},
     "outputOptions": [
-        (
-            "ramses_nml",
-            "yes"
-        ),
-        (
-            "ramses_old_nml",
-            "no"
-        ),
-        (
-            "ramses_pvar_idx",
-            "43"
-        )
+        ("ramses_nml", "yes"),
+        ("ramses_old_nml", "no"),
+        ("ramses_pvar_idx", "43"),
     ],
     "startRedshift": 100,
     "outputFilename": "ics.dat",
     "seperateFolders": True,
-    "tracebackRadius": 4
+    "tracebackRadius": 4,
 }
+
 config = DownloadConfig(
     simulation_name="test",
     project_name="project",

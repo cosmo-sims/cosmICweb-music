@@ -1,19 +1,10 @@
 import re
 from pathlib import Path
 
-import click
 from _pytest.monkeypatch import MonkeyPatch
 from click.testing import CliRunner
 
-from cosmicweb_music.cosmICweb import (
-    DEFAULT_URL,
-    downloadstore_mode,
-    publication_mode,
-    collection_mode,
-    get,
-    cli,
-)
-from cosmicweb_music.data_types import Args
+from cosmicweb_music.cosmICweb import cli
 
 reference_output = """
 # Zoom Initial Conditions for halo 25401888 (halo_25401888) in simulation AGORA (AGORA Project project)

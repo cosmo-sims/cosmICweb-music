@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import NamedTuple, Any, List, Dict, TypedDict, Tuple
+from typing import NamedTuple, TypedDict
 
 
 class Ellipsoid(NamedTuple):
-    center: List[float]
-    shape: List[List[float]]
+    center: list[float]
+    shape: list[list[float]]
     traceback_radius: float
     radius_definition: str
 
@@ -19,7 +19,7 @@ class Resolution(TypedDict):
 class Configuration(TypedDict):
     outputType: str
     resolution: Resolution
-    outputOptions: List[Tuple[str, str]]
+    outputOptions: list[tuple[str, str]]
     startRedshift: int
     outputFilename: str
     seperateFolders: bool
@@ -36,9 +36,9 @@ class ICSections(TypedDict):
 class DownloadConfig(NamedTuple):
     simulation_name: str
     project_name: str
-    halo_names: List[str]
-    halo_ids: List[int]
-    halo_urls: List[str]
+    halo_names: list[str]
+    halo_ids: list[int]
+    halo_urls: list[str]
     traceback_radius: float
     api_token: str
     MUSIC: ICSections

@@ -4,8 +4,6 @@ import os
 import sys
 from typing import Any
 
-from click import Context
-
 from .data_types import Ellipsoid, Args, DownloadConfig
 
 import click
@@ -34,7 +32,7 @@ def fetch_ellipsoids(url: str, api_token: str, attempts: int) -> list[Ellipsoid]
             # This will raise an error if not successful
             r.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            logging.warning("Failed fetching (attempt {}/{}) ...".format(i, attempts))
+            logging.warning(f"Failed fetching (attempt {i}/{attempts}) ...")
             logging.warning(e)
         else:
             content = r.json()
@@ -47,7 +45,7 @@ def fetch_ellipsoids(url: str, api_token: str, attempts: int) -> list[Ellipsoid]
                 )
                 for e in content
             ]
-    logging.error("Unable to download ellipsoids from {}".format(url))
+    logging.error(f"Unable to download ellipsoids from {url}")
     return []
 
 
@@ -68,21 +66,19 @@ def fetch_downloadstore(cosmicweb_url: str, target: str) -> DownloadConfig:
         # This will raise an error if not successful
         r.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        logging.critical(f"Failed downloading from cosmICweb.")
+        logging.critical("Failed downloading from cosmICweb.")
         logging.critical(e)
         sys.exit(1)
     content = r.json()
     sim = content["simulation"]
     halo_urls = [
-        "{url}/simulation/{sid}/halo/{hid}".format(
-            url=sim["api_url"], sid=sim["api_id"], hid=h
-        )
+        f"{sim['api_url']}/simulation/{sim['api_id']}/halo/{h}"
         for h in content["halos"]
     ]
     return DownloadConfig(
         simulation_name=sim["name"],
         project_name=sim["project_name"],
-        halo_names=["halo_{}".format(h) for h in content["halos"]],
+        halo_names=[f"halo_{h}" for h in content["halos"]],
         halo_ids=content["halos"],
         halo_urls=halo_urls,
         traceback_radius=content["traceback_radius"],
@@ -238,7 +234,7 @@ def compose_template(
 def write_music_file(output_file: str, music_config: str) -> None:
     dirname = os.path.dirname(output_file)
     if not os.path.exists(dirname):
-        logging.debug("Creating directory {}".format(dirname))
+        logging.debug(f"Creating directory {dirname}")
         os.makedirs(dirname)
     with open(output_file, "w") as f:
         f.write(music_config)
@@ -263,7 +259,6 @@ def process_config(config: DownloadConfig, args: Args) -> None:
     # Edit template
     logging.info("Creating MUSIC template")
     music_template = music_config_to_template(config)
-    output = []
 
     if click.confirm(
         "Do you want to edit the MUSIC template before creating the IC files?\n"
@@ -278,18 +273,16 @@ def process_config(config: DownloadConfig, args: Args) -> None:
         config.halo_names, config.halo_ids, ellipsoids
     ):
         if ellipsoid is None:
-            logging.warning(
-                "Ellipsoid for halo {} not available, skipping".format(halo_name)
-            )
+            logging.warning(f"Ellipsoid for halo {halo_name} not available, skipping")
             continue
-        logging.info("Composing MUSIC configuration file for halo {}".format(halo_name))
+        logging.info(f"Composing MUSIC configuration file for halo {halo_name}")
         music_config = compose_template(
             music_template, ellipsoid, config, halo_name, halo_id
         )
         if args.common_directory and len(ellipsoids) > 1:
             output_file = os.path.join(args.output_path, str(halo_name), "ics.cfg")
         else:
-            output_file = os.path.join(args.output_path, "ics_{}.cfg".format(halo_name))
+            output_file = os.path.join(args.output_path, f"ics_{halo_name}.cfg")
         logging.info(
             "Storing MUSIC configuration file for halo {} in {}".format(
                 halo_name, output_file
